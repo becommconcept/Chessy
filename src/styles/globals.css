@@ -1,0 +1,636 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   Charte graphique de Chessy-les-Mines
+
+   Deux couleurs racontent la commune : l'azurite — la « chessylite », minéral
+   d'un bleu profond découvert ici — et la pierre dorée du Beaujolais. Le vert
+   malachite, l'autre minéral de cuivre du gisement, sert d'accent secondaire.
+   ========================================================================== */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Azurite — couleur institutionnelle principale */
+  --color-azur-50: #eef6fc;
+  --color-azur-100: #d8e9f6;
+  --color-azur-200: #b0d1ec;
+  --color-azur-300: #7fb2dc;
+  --color-azur-400: #4d8ec5;
+  --color-azur-500: #2a7bb8;
+  --color-azur-600: #14507f;
+  --color-azur-700: #103f66;
+  --color-azur-800: #0b2e4f;
+  --color-azur-900: #071f36;
+  --color-azur-950: #04131f;
+
+  /* Pierres dorées — accent chaleureux */
+  --color-dore-50: #fdf9f0;
+  --color-dore-100: #fbf1de;
+  --color-dore-200: #f4e0b8;
+  --color-dore-300: #e9c887;
+  --color-dore-400: #d9a953;
+  --color-dore-500: #c68a2e;
+  --color-dore-600: #a86f22;
+  --color-dore-700: #85541c;
+  --color-dore-800: #5d3a14;
+  --color-dore-900: #3d260e;
+
+  /* Malachite — accent secondaire */
+  --color-malachite-50: #eef8f4;
+  --color-malachite-100: #d6ede4;
+  --color-malachite-300: #86c4ae;
+  --color-malachite-500: #1e7a5f;
+  --color-malachite-600: #17624c;
+  --color-malachite-700: #124d3c;
+
+  /* Neutres légèrement réchauffés pour s'accorder à la pierre dorée */
+  --color-pierre-50: #faf9f7;
+  --color-pierre-100: #f3f1ed;
+  --color-pierre-200: #e6e3dc;
+  --color-pierre-300: #d2cec4;
+  --color-pierre-400: #a9a49a;
+  --color-pierre-500: #7d7871;
+  --color-pierre-600: #5c5852;
+  --color-pierre-700: #45423d;
+  --color-pierre-800: #2c2a27;
+  --color-pierre-900: #1b1a18;
+  --color-pierre-950: #100f0e;
+
+  --font-sans:
+    "Marianne", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  --font-display:
+    "Marianne", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --radius-card: 0.875rem;
+  --radius-field: 0.625rem;
+
+  --shadow-douce: 0 1px 2px rgb(11 46 79 / 0.05), 0 8px 24px -12px rgb(11 46 79 / 0.14);
+  --shadow-relief: 0 2px 4px rgb(11 46 79 / 0.06), 0 18px 40px -18px rgb(11 46 79 / 0.22);
+  --shadow-menu: 0 24px 64px -24px rgb(11 46 79 / 0.35);
+
+  --ease-douce: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-apparition: apparition 0.55s var(--ease-douce) both;
+  --animate-glisse-bas: glisse-bas 0.35s var(--ease-douce) both;
+  --animate-glisse-haut: glisse-haut 0.45s var(--ease-douce) both;
+  --animate-echelle: echelle 0.25s var(--ease-douce) both;
+  --animate-pulsation: pulsation 2.4s ease-in-out infinite;
+  --animate-defilement: defilement 40s linear infinite;
+}
+
+@keyframes apparition {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes glisse-haut {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes glisse-bas {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes echelle {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pulsation {
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes defilement {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Bases
+   -------------------------------------------------------------------------- */
+
+@layer base {
+  :root {
+    --surface: var(--color-white);
+    --surface-alt: var(--color-pierre-50);
+    --surface-sunken: var(--color-pierre-100);
+    --texte: var(--color-pierre-900);
+    --texte-doux: var(--color-pierre-600);
+    --bordure: var(--color-pierre-200);
+    --marque: var(--color-azur-600);
+    --marque-contraste: var(--color-white);
+    --focus: var(--color-dore-500);
+    color-scheme: light;
+  }
+
+  .dark {
+    --surface: #0d1620;
+    --surface-alt: #121e2b;
+    --surface-sunken: #0a1219;
+    --texte: #eef3f8;
+    --texte-doux: #a8b6c4;
+    --bordure: #22323f;
+    --marque: var(--color-azur-300);
+    --marque-contraste: var(--color-azur-950);
+    --focus: var(--color-dore-300);
+    color-scheme: dark;
+  }
+
+  * {
+    border-color: var(--bordure);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--surface);
+    color: var(--texte);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.018em;
+    line-height: 1.16;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Anneau de focus visible, homogène et suffisamment contrasté (RGAA) */
+  :focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  ::selection {
+    background-color: var(--color-azur-200);
+    color: var(--color-azur-900);
+  }
+
+  .dark ::selection {
+    background-color: var(--color-azur-700);
+    color: var(--color-white);
+  }
+
+  /* Ancres : compense la hauteur de l'en-tête collant */
+  :target {
+    scroll-margin-top: 7rem;
+  }
+
+  img,
+  svg,
+  video {
+    max-width: 100%;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Préférences d'accessibilité (menu « Confort de lecture »)
+   -------------------------------------------------------------------------- */
+
+@layer base {
+  /* Corps de texte agrandi */
+  html[data-taille="grand"] body {
+    font-size: 1.0938rem;
+  }
+
+  html[data-taille="tres-grand"] body {
+    font-size: 1.1875rem;
+  }
+
+  /* Contraste renforcé */
+  html[data-contraste="fort"] {
+    --texte: #000000;
+    --texte-doux: #2c2a27;
+    --bordure: #4a4a4a;
+    --surface-alt: #ffffff;
+  }
+
+  html[data-contraste="fort"].dark {
+    --texte: #ffffff;
+    --texte-doux: #e4ecf3;
+    --bordure: #8ba3b8;
+    --surface: #000000;
+    --surface-alt: #06090d;
+  }
+
+  html[data-contraste="fort"] a {
+    text-decoration: underline;
+  }
+
+  /* Espacement adapté aux lecteurs dyslexiques */
+  html[data-lecture="confort"] body {
+    letter-spacing: 0.045em;
+    word-spacing: 0.12em;
+    line-height: 1.9;
+  }
+
+  html[data-lecture="confort"] p,
+  html[data-lecture="confort"] li {
+    max-width: 62ch;
+  }
+
+  /* Respect de la préférence système et du réglage manuel */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  html[data-animations="off"] *,
+  html[data-animations="off"] *::before,
+  html[data-animations="off"] *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Composants utilitaires
+   -------------------------------------------------------------------------- */
+
+@layer components {
+  .conteneur {
+    width: 100%;
+    margin-inline: auto;
+    padding-inline: 1rem;
+    max-width: 80rem;
+  }
+
+  @media (min-width: 640px) {
+    .conteneur {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .conteneur {
+      padding-inline: 2rem;
+    }
+  }
+
+  .conteneur-lecture {
+    width: 100%;
+    margin-inline: auto;
+    max-width: 46rem;
+  }
+
+  /* Lien d'évitement, révélé à la prise de focus clavier */
+  .lien-evitement {
+    position: absolute;
+    left: 1rem;
+    top: -6rem;
+    z-index: 100;
+    border-radius: var(--radius-field);
+    background-color: var(--color-azur-800);
+    padding: 0.75rem 1.25rem;
+    font-weight: 600;
+    color: white;
+    transition: top 0.2s var(--ease-douce);
+  }
+
+  .lien-evitement:focus {
+    top: 1rem;
+  }
+
+  /* Motif discret évoquant les filons de la mine */
+  .motif-filons {
+    background-image:
+      radial-gradient(circle at 20% 30%, rgb(42 123 184 / 0.16) 0, transparent 42%),
+      radial-gradient(circle at 82% 12%, rgb(198 138 46 / 0.14) 0, transparent 38%),
+      radial-gradient(circle at 62% 88%, rgb(30 122 95 / 0.1) 0, transparent 44%);
+  }
+
+  .motif-pierre {
+    background-image:
+      linear-gradient(135deg, rgb(198 138 46 / 0.07) 25%, transparent 25%),
+      linear-gradient(225deg, rgb(198 138 46 / 0.07) 25%, transparent 25%),
+      linear-gradient(315deg, rgb(198 138 46 / 0.07) 25%, transparent 25%),
+      linear-gradient(45deg, rgb(198 138 46 / 0.07) 25%, transparent 25%);
+    background-size: 28px 28px;
+  }
+
+  /* Dégradé de titre, réservé aux grands intertitres */
+  .titre-degrade {
+    background-image: linear-gradient(
+      95deg,
+      var(--color-azur-700),
+      var(--color-azur-500) 55%,
+      var(--color-dore-500)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .dark .titre-degrade {
+    background-image: linear-gradient(
+      95deg,
+      var(--color-azur-200),
+      var(--color-azur-300) 55%,
+      var(--color-dore-300)
+    );
+  }
+
+  /* Barre de progression de lecture d'un article */
+  .barre-lecture {
+    background-image: linear-gradient(90deg, var(--color-azur-500), var(--color-dore-400));
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Contenus riches produits par l'éditeur du back-office
+   -------------------------------------------------------------------------- */
+
+@layer components {
+  .contenu {
+    font-size: 1.0313rem;
+    line-height: 1.75;
+    color: var(--texte);
+  }
+
+  .contenu > * + * {
+    margin-top: 1.15em;
+  }
+
+  .contenu h2 {
+    margin-top: 2.4em;
+    font-size: 1.6rem;
+    scroll-margin-top: 7rem;
+  }
+
+  .contenu h3 {
+    margin-top: 2em;
+    font-size: 1.28rem;
+    scroll-margin-top: 7rem;
+  }
+
+  .contenu h4 {
+    margin-top: 1.7em;
+    font-size: 1.09rem;
+  }
+
+  .contenu h2 + *,
+  .contenu h3 + *,
+  .contenu h4 + * {
+    margin-top: 0.7em;
+  }
+
+  .contenu strong {
+    font-weight: 650;
+    color: var(--texte);
+  }
+
+  .contenu a {
+    color: var(--marque);
+    font-weight: 500;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+    transition: color 0.15s;
+  }
+
+  .contenu a:hover {
+    color: var(--color-dore-600);
+    text-decoration-thickness: 2px;
+  }
+
+  .dark .contenu a:hover {
+    color: var(--color-dore-300);
+  }
+
+  .contenu ul,
+  .contenu ol {
+    padding-left: 0.35rem;
+  }
+
+  .contenu li {
+    position: relative;
+    padding-left: 1.5rem;
+  }
+
+  .contenu li + li {
+    margin-top: 0.5em;
+  }
+
+  .contenu ul > li::before {
+    content: "";
+    position: absolute;
+    left: 0.15rem;
+    top: 0.65em;
+    height: 0.4rem;
+    width: 0.4rem;
+    border-radius: 9999px;
+    background-color: var(--color-dore-500);
+  }
+
+  .contenu ol {
+    counter-reset: liste;
+  }
+
+  .contenu ol > li {
+    counter-increment: liste;
+  }
+
+  .contenu ol > li::before {
+    content: counter(liste) ".";
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-weight: 650;
+    color: var(--color-azur-500);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .contenu blockquote {
+    border-left: 3px solid var(--color-dore-400);
+    background-color: var(--surface-alt);
+    border-radius: 0 var(--radius-field) var(--radius-field) 0;
+    padding: 1rem 1.25rem;
+    font-style: italic;
+    color: var(--texte-doux);
+  }
+
+  .contenu table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    font-size: 0.9375rem;
+  }
+
+  @media (min-width: 768px) {
+    .contenu table {
+      display: table;
+      white-space: normal;
+    }
+  }
+
+  .contenu th {
+    background-color: var(--surface-alt);
+    padding: 0.7rem 0.9rem;
+    text-align: left;
+    font-weight: 650;
+    font-size: 0.875rem;
+    border-bottom: 2px solid var(--bordure);
+  }
+
+  .contenu td {
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--bordure);
+    vertical-align: top;
+  }
+
+  .contenu img {
+    border-radius: var(--radius-card);
+  }
+
+  .contenu hr {
+    border: 0;
+    border-top: 1px solid var(--bordure);
+    margin-block: 2.5em;
+  }
+
+  .contenu code {
+    background-color: var(--surface-sunken);
+    border-radius: 0.3rem;
+    padding: 0.1em 0.35em;
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+  }
+
+  /* Variante sur fond foncé */
+  .contenu-inverse,
+  .contenu-inverse strong {
+    color: rgb(255 255 255 / 0.92);
+  }
+
+  .contenu-inverse a {
+    color: var(--color-dore-200);
+  }
+
+  .contenu-inverse a:hover {
+    color: white;
+  }
+
+  .contenu-inverse ul > li::before {
+    background-color: var(--color-dore-300);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Impression : une fiche démarche doit rester lisible sur papier
+   -------------------------------------------------------------------------- */
+
+@media print {
+  .sans-impression {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+    color: black;
+    font-size: 11pt;
+  }
+
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #444;
+  }
+
+  .conteneur {
+    max-width: none;
+    padding: 0;
+  }
+}
+
+/* Barre de défilement discrète */
+@layer base {
+  @supports selector(::-webkit-scrollbar) {
+    ::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--surface-alt);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--color-pierre-300);
+      border: 3px solid var(--surface-alt);
+      border-radius: 9999px;
+    }
+
+    .dark ::-webkit-scrollbar-thumb {
+      background: #2f4351;
+    }
+  }
+}

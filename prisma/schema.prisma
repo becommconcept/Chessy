@@ -1,0 +1,696 @@
+// Schéma de données du site de la commune de Chessy-les-Mines.
+// SQLite par défaut pour une installation immédiate ; basculer `provider` sur
+// "postgresql" en production ne demande aucune modification du code applicatif
+// (les énumérations sont volontairement stockées en texte, cf. src/lib/enums.ts).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Comptes du back-office
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         String    @default("EDITEUR") // ADMIN | EDITEUR | AGENT
+  job          String?
+  active       Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  pagesUpdated   Page[]          @relation("PageEditor")
+  revisions      PageRevision[]
+  mediasUploaded Media[]
+  newsAuthored   NewsPost[]
+  auditLogs      AuditLog[]
+  roomDecisions  RoomBooking[]   @relation("RoomBookingDecider")
+  loanDecisions  EquipmentLoan[] @relation("EquipmentLoanDecider")
+  requests       Request[]       @relation("RequestAssignee")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String // CREATE | UPDATE | DELETE | PUBLISH | LOGIN | DECISION
+  entity    String
+  entityId  String?
+  label     String?
+  detail    String?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Gestion de contenu : pages composées de blocs réordonnables
+// ---------------------------------------------------------------------------
+
+model Page {
+  id       String  @id @default(cuid())
+  slug     String  @unique // chemin complet, ex. "la-mairie/conseil-municipal"
+  title    String
+  navLabel String?
+  excerpt  String?
+
+  parentId String?
+  parent   Page?   @relation("PageTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Page[]  @relation("PageTree")
+
+  coverId String?
+  cover   Media?  @relation("PageCover", fields: [coverId], references: [id], onDelete: SetNull)
+
+  template  String  @default("STANDARD") // STANDARD | LARGE | ACCUEIL
+  status    String  @default("BROUILLON") // BROUILLON | PUBLIEE
+  order     Int     @default(0)
+  showInNav Boolean @default(true)
+  icon      String?
+
+  seoTitle       String?
+  seoDescription String?
+  noIndex        Boolean @default(false)
+
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  updatedById String?
+  updatedBy   User?   @relation("PageEditor", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  blocks    Block[]
+  revisions PageRevision[]
+  menuItems MenuItem[]
+
+  @@index([status])
+  @@index([parentId, order])
+}
+
+model Block {
+  id        String   @id @default(cuid())
+  pageId    String
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  type      String // cf. src/lib/blocks.ts
+  order     Int      @default(0)
+  data      String   @default("{}") // charge utile JSON du bloc
+  visible   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([pageId, order])
+}
+
+/// Instantané complet d'une page (métadonnées + blocs) permettant de revenir
+/// à une version antérieure depuis le back-office.
+model PageRevision {
+  id          String   @id @default(cuid())
+  pageId      String
+  page        Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  label       String?
+  snapshot    String // JSON
+  createdAt   DateTime @default(now())
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([pageId, createdAt])
+}
+
+model Menu {
+  id    String     @id @default(cuid())
+  key   String     @unique // principal | pied-decouvrir | pied-demarches | rapide
+  label String
+  items MenuItem[]
+}
+
+model MenuItem {
+  id     String @id @default(cuid())
+  menuId String
+  menu   Menu   @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  parentId String?
+  parent   MenuItem?  @relation("MenuTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children MenuItem[] @relation("MenuTree")
+
+  label       String
+  href        String?
+  pageId      String?
+  page        Page?   @relation(fields: [pageId], references: [id], onDelete: SetNull)
+  description String?
+  icon        String?
+  highlight   Boolean @default(false)
+  order       Int     @default(0)
+
+  @@index([menuId, parentId, order])
+}
+
+// ---------------------------------------------------------------------------
+// Médiathèque
+// ---------------------------------------------------------------------------
+
+model Media {
+  id       String  @id @default(cuid())
+  filename String
+  url      String
+  mimeType String
+  size     Int     @default(0)
+  width    Int?
+  height   Int?
+  alt      String  @default("")
+  credit   String?
+  folder   String  @default("general")
+
+  uploadedById String?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+
+  pageCovers       Page[]          @relation("PageCover")
+  newsCovers       NewsPost[]      @relation("NewsCover")
+  eventCovers      Event[]         @relation("EventCover")
+  associationLogos Association[]   @relation("AssociationLogo")
+  eluPhotos        Elu[]           @relation("EluPhoto")
+  equipementImages Equipement[]    @relation("EquipementImage")
+  roomImages       Room[]          @relation("RoomImage")
+  itemImages       EquipmentItem[] @relation("EquipmentItemImage")
+  documents        Document[]      @relation("DocumentFile")
+  requestPhotos    Request[]       @relation("RequestPhoto")
+
+  @@index([folder, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Actualités et agenda
+// ---------------------------------------------------------------------------
+
+model NewsCategory {
+  id    String     @id @default(cuid())
+  slug  String     @unique
+  name  String
+  color String     @default("#1F6F5C")
+  order Int        @default(0)
+  posts NewsPost[]
+}
+
+model NewsPost {
+  id      String @id @default(cuid())
+  slug    String @unique
+  title   String
+  excerpt String
+  content String // HTML produit par l'éditeur
+
+  coverId String?
+  cover   Media?  @relation("NewsCover", fields: [coverId], references: [id], onDelete: SetNull)
+
+  categoryId String?
+  category   NewsCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  status      String    @default("BROUILLON") // BROUILLON | PUBLIEE
+  featured    Boolean   @default(false)
+  pinned      Boolean   @default(false)
+  publishedAt DateTime?
+  views       Int       @default(0)
+
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, publishedAt])
+}
+
+model Event {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  title       String
+  description String
+  excerpt     String?
+
+  startAt DateTime
+  endAt   DateTime?
+  allDay  Boolean   @default(false)
+
+  place     String?
+  address   String?
+  lat       Float?
+  lng       Float?
+  organizer String?
+  priceInfo String?
+  audience  String? // TOUT_PUBLIC | FAMILLE | SENIORS | JEUNESSE
+  category  String? // CULTURE | SPORT | MUNICIPAL | FESTIF | ASSOCIATIF | MARCHE
+
+  registrationUrl String?
+  contactEmail    String?
+
+  coverId String?
+  cover   Media?  @relation("EventCover", fields: [coverId], references: [id], onDelete: SetNull)
+
+  associationId String?
+  association   Association? @relation(fields: [associationId], references: [id], onDelete: SetNull)
+
+  status    String   @default("PUBLIEE") // BROUILLON | PUBLIEE
+  featured  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([startAt])
+  @@index([status, startAt])
+}
+
+model Document {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  category    String // BULLETIN | COMPTE_RENDU | ARRETE | URBANISME | BUDGET | REGLEMENT | AUTRE
+  year        Int?
+  meetingDate DateTime?
+  publishedAt DateTime  @default(now())
+  order       Int       @default(0)
+
+  fileId String?
+  file   Media?  @relation("DocumentFile", fields: [fileId], references: [id], onDelete: SetNull)
+  href   String? // lien externe si le document n'est pas hébergé
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, publishedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Annuaires : associations, élus, équipements, démarches
+// ---------------------------------------------------------------------------
+
+model Association {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  shortName   String?
+  category    String // SPORT | CULTURE | LOISIRS | SOLIDARITE | PATRIMOINE | JEUNESSE | ECOLE | AUTRE
+  description String
+  president   String?
+  contactName String?
+  email       String?
+  phone       String?
+  website     String?
+  facebook    String?
+  address     String?
+  schedule    String?
+  fee         String?
+
+  logoId String?
+  logo   Media?  @relation("AssociationLogo", fields: [logoId], references: [id], onDelete: SetNull)
+
+  active    Boolean  @default(true)
+  featured  Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events Event[]
+
+  @@index([category, name])
+}
+
+model Elu {
+  id          String  @id @default(cuid())
+  name        String
+  role        String // MAIRE | ADJOINT | CONSEILLER_DELEGUE | CONSEILLER
+  title       String? // ex. "1re adjointe"
+  delegations String? // ex. "Finances, Ressources humaines"
+  email       String?
+  order       Int     @default(0)
+
+  photoId String?
+  photo   Media?  @relation("EluPhoto", fields: [photoId], references: [id], onDelete: SetNull)
+
+  commissions CommissionMember[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model Commission {
+  id          String             @id @default(cuid())
+  slug        String             @unique
+  name        String
+  description String?
+  order       Int                @default(0)
+  members     CommissionMember[]
+}
+
+model CommissionMember {
+  id           String     @id @default(cuid())
+  commissionId String
+  commission   Commission @relation(fields: [commissionId], references: [id], onDelete: Cascade)
+  eluId        String
+  elu          Elu        @relation(fields: [eluId], references: [id], onDelete: Cascade)
+  isChair      Boolean    @default(false)
+
+  @@unique([commissionId, eluId])
+}
+
+model Equipement {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  category    String // MAIRIE | SCOLAIRE | SPORT | CULTURE | PETITE_ENFANCE | SANTE | TECHNIQUE | LOISIRS
+  description String?
+  address     String?
+  lat         Float?
+  lng         Float?
+  phone       String?
+  email       String?
+  hours       String?
+  accessible  Boolean @default(false)
+  order       Int     @default(0)
+
+  imageId String?
+  image   Media?  @relation("EquipementImage", fields: [imageId], references: [id], onDelete: SetNull)
+
+  @@index([category, order])
+}
+
+model Demarche {
+  id           String  @id @default(cuid())
+  slug         String  @unique
+  title        String
+  category     String // ETAT_CIVIL | URBANISME | ELECTIONS | SCOLAIRE | LOGEMENT | EAU | ASSOCIATIONS | AUTRE
+  summary      String
+  content      String // HTML
+  onlineUrl    String? // téléservice national (ANTS, service-public.fr…)
+  onlineLabel  String?
+  internalPath String? // service en ligne interne, ex. "/services/salle-des-fetes"
+  requiredDocs String  @default("[]") // JSON : string[]
+  processTime  String?
+  cost         String?
+  audience     String?
+  icon         String?
+  featured     Boolean @default(false)
+  order        Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, order])
+}
+
+// ---------------------------------------------------------------------------
+// Service en ligne : réservation de salles
+// ---------------------------------------------------------------------------
+
+model Room {
+  id               String  @id @default(cuid())
+  slug             String  @unique
+  name             String
+  subtitle         String?
+  description      String
+  capacitySeated   Int?
+  capacityStanding Int?
+  surface          Int?
+  address          String?
+  equipments       String  @default("[]") // JSON : string[]
+  rules            String? // HTML : règlement d'utilisation
+  active           Boolean @default(true)
+
+  /// Nombre de jours d'anticipation maximum pour une demande.
+  bookingWindowDays Int @default(365)
+  /// Délai minimum entre la demande et la date souhaitée.
+  minNoticeDays     Int @default(15)
+  order             Int @default(0)
+
+  imageId String?
+  image   Media?  @relation("RoomImage", fields: [imageId], references: [id], onDelete: SetNull)
+
+  tariffs   RoomTariff[]
+  bookings  RoomBooking[]
+  closures  RoomClosure[]
+  slots     RoomSlot[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+/// Créneaux réservables d'une salle (ex. « week-end complet », « soirée »).
+model RoomSlot {
+  id       String  @id @default(cuid())
+  roomId   String
+  room     Room    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  key      String // WEEKEND | JOURNEE | DEMI_JOURNEE | SOIREE
+  label    String
+  details  String?
+  /// Jour de la semaine de début imposé (0 = dimanche … 6 = samedi), sinon null.
+  startDow Int?
+  /// Durée en jours occupée par le créneau (bloque le calendrier d'autant).
+  days     Int     @default(1)
+  order    Int     @default(0)
+
+  @@unique([roomId, key])
+}
+
+model RoomTariff {
+  id           String  @id @default(cuid())
+  roomId       String
+  room         Room    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  audience     String // ASSO_LOCALE | HABITANT | ASSO_EXTERIEURE | ENTREPRISE | COMMUNE
+  slotKey      String  @default("WEEKEND")
+  label        String
+  amountCents  Int     @default(0)
+  depositCents Int     @default(0)
+  notes        String?
+
+  @@unique([roomId, audience, slotKey])
+}
+
+/// Périodes pendant lesquelles la salle n'est pas réservable (travaux,
+/// manifestations municipales, mise à disposition récurrente…).
+model RoomClosure {
+  id        String   @id @default(cuid())
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  startDate DateTime
+  endDate   DateTime
+  reason    String
+  createdAt DateTime @default(now())
+
+  @@index([roomId, startDate])
+}
+
+model RoomBooking {
+  id        String @id @default(cuid())
+  reference String @unique
+  token     String @unique // suivi de la demande sans compte
+
+  roomId String
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  startDate DateTime
+  endDate   DateTime
+  slotKey   String   @default("WEEKEND")
+  audience  String
+
+  purpose           String
+  expectedAttendees Int?
+  organizationName  String?
+  applicantName     String
+  applicantEmail    String
+  applicantPhone    String
+  applicantAddress  String?
+
+  needsTables  Boolean @default(false)
+  needsChairs  Boolean @default(false)
+  needsKitchen Boolean @default(false)
+  needsBar     Boolean @default(false)
+  comment      String?
+
+  amountCents  Int @default(0)
+  depositCents Int @default(0)
+
+  status          String    @default("EN_ATTENTE") // EN_ATTENTE | PREVALIDEE | CONFIRMEE | REFUSEE | ANNULEE
+  adminNote       String?
+  decisionMessage String?
+  decidedAt       DateTime?
+  decidedById     String?
+  decidedBy       User?     @relation("RoomBookingDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([roomId, startDate])
+  @@index([status, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Service en ligne : prêt de matériel
+// ---------------------------------------------------------------------------
+
+model EquipmentItem {
+  id                      String  @id @default(cuid())
+  slug                    String  @unique
+  name                    String
+  category                String // MOBILIER | RECEPTION | TECHNIQUE | SIGNALISATION | JEUX | LOGISTIQUE
+  description             String?
+  unitLabel               String  @default("unité")
+  quantityTotal           Int     @default(1)
+  depositCents            Int     @default(0)
+  feeCents                Int     @default(0)
+  requiresVehicle         Boolean @default(false)
+  reservedForAssociations Boolean @default(false)
+  active                  Boolean @default(true)
+  order                   Int     @default(0)
+
+  imageId String?
+  image   Media?  @relation("EquipmentItemImage", fields: [imageId], references: [id], onDelete: SetNull)
+
+  lines EquipmentLoanLine[]
+
+  @@index([category, order])
+}
+
+model EquipmentLoan {
+  id        String @id @default(cuid())
+  reference String @unique
+  token     String @unique
+
+  applicantName    String
+  applicantEmail   String
+  applicantPhone   String
+  applicantAddress String?
+  organizationName String?
+  audience         String  @default("HABITANT") // HABITANT | ASSO_LOCALE | ASSO_EXTERIEURE | ENTREPRISE
+
+  purpose    String
+  eventDate  DateTime?
+  pickupDate DateTime
+  returnDate DateTime
+  transport  String    @default("RETRAIT") // RETRAIT | LIVRAISON_DEMANDEE
+
+  status          String    @default("EN_ATTENTE") // EN_ATTENTE | CONFIRMEE | SORTIE | RETOURNEE | REFUSEE | ANNULEE
+  adminNote       String?
+  decisionMessage String?
+  decidedAt       DateTime?
+  decidedById     String?
+  decidedBy       User?     @relation("EquipmentLoanDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  depositCents Int @default(0)
+  feeCents     Int @default(0)
+
+  lines     EquipmentLoanLine[]
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@index([status, pickupDate])
+}
+
+model EquipmentLoanLine {
+  id       String        @id @default(cuid())
+  loanId   String
+  loan     EquipmentLoan @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  itemId   String
+  item     EquipmentItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  quantity Int           @default(1)
+
+  @@unique([loanId, itemId])
+}
+
+// ---------------------------------------------------------------------------
+// Demandes des habitants : contact, signalement, suggestion, rendez-vous
+// ---------------------------------------------------------------------------
+
+model Request {
+  id        String @id @default(cuid())
+  reference String @unique
+  token     String @unique
+
+  type     String // CONTACT | SIGNALEMENT | SUGGESTION | RENDEZ_VOUS | NEWSLETTER
+  category String? // VOIRIE | ECLAIRAGE | PROPRETE | ESPACES_VERTS | EAU | BATIMENT | ANIMAUX | AUTRE
+  subject  String
+  message  String
+
+  name    String
+  email   String
+  phone   String?
+  address String?
+
+  lat           Float?
+  lng           Float?
+  locationLabel String?
+
+  photoId String?
+  photo   Media?  @relation("RequestPhoto", fields: [photoId], references: [id], onDelete: SetNull)
+
+  status       String    @default("NOUVEAU") // NOUVEAU | EN_COURS | TRAITE | CLOS
+  priority     String    @default("NORMALE") // BASSE | NORMALE | HAUTE
+  assignedToId String?
+  assignedTo   User?     @relation("RequestAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  adminNote    String?
+  resolvedAt   DateTime?
+
+  consentRgpd Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  messages RequestMessage[]
+
+  @@index([type, status])
+  @@index([status, createdAt])
+}
+
+model RequestMessage {
+  id         String   @id @default(cuid())
+  requestId  String
+  request    Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  author     String // CITOYEN | MAIRIE
+  authorName String?
+  body       String
+  createdAt  DateTime @default(now())
+
+  @@index([requestId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Alertes, paramètres, newsletter
+// ---------------------------------------------------------------------------
+
+model Alert {
+  id        String    @id @default(cuid())
+  level     String    @default("INFO") // INFO | VIGILANCE | URGENCE
+  title     String
+  message   String?
+  linkHref  String?
+  linkLabel String?
+  startAt   DateTime  @default(now())
+  endAt     DateTime?
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([active, startAt])
+}
+
+/// Réglages éditables depuis le back-office. `value` contient du JSON afin de
+/// regrouper des ensembles cohérents (identité, contact, horaires, couleurs…).
+model SiteSetting {
+  key       String   @id
+  value     String
+  label     String?
+  group     String   @default("general")
+  updatedAt DateTime @updatedAt
+}
+
+model NewsletterSubscriber {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  name        String?
+  token       String    @unique
+  confirmed   Boolean   @default(false)
+  confirmedAt DateTime?
+  topics      String    @default("[]") // JSON : string[]
+  createdAt   DateTime  @default(now())
+}
