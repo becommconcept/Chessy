@@ -73,7 +73,7 @@ export function AdminSidebar({
     <nav aria-label="Navigation de l'espace mairie" className="flex h-full flex-col">
       <div
         className={cn(
-          "flex items-center gap-3 border-b border-white/10 px-4 py-4",
+          "flex shrink-0 items-center gap-3 border-b border-white/10 px-4 py-4",
           collapsed && "lg:justify-center lg:px-2",
         )}
       >
@@ -92,7 +92,7 @@ export function AdminSidebar({
         </Link>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2.5 py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-4">
         {groups.map((group) => (
           <div key={group.title} className="mb-5 last:mb-0">
             {!collapsed ? (
@@ -141,7 +141,7 @@ export function AdminSidebar({
         ))}
       </div>
 
-      <div className="border-t border-white/10 p-2.5">
+      <div className="shrink-0 border-t border-white/10 p-2.5">
         <div
           className={cn(
             "mb-2 flex items-center gap-2.5 rounded-field px-2.5 py-2",

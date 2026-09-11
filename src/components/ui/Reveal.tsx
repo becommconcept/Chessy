@@ -16,9 +16,11 @@ type RevealProps = {
 /**
  * Révèle son contenu lorsqu'il entre dans le champ de vision.
  *
- * L'animation est purement décorative : le contenu est présent dans le DOM dès
- * le rendu serveur (donc indexable et accessible), et l'effet est neutralisé
- * lorsque l'utilisateur a demandé la réduction des animations.
+ * L'animation est purement décorative, et le masquage initial est porté par la
+ * feuille de styles sous la classe `html.anim` : celle-ci n'est posée que si
+ * JavaScript s'exécute et que les animations sont souhaitées. Sans script, ou
+ * avec les animations réduites, le contenu s'affiche normalement — il n'est
+ * jamais rendu invisible par une animation qui ne se déclencherait pas.
  */
 export function Reveal({
   children,
@@ -42,6 +44,15 @@ export function Reveal({
       return;
     }
 
+    // Déjà dans le champ de vision au montage — arrivée sur une ancre, position
+    // de défilement restaurée, page courte : on affiche sans attendre
+    // l'observateur, qui pourrait ne jamais recevoir de nouvelle intersection.
+    const rect = element.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      setVisible(true);
+      return;
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -55,30 +66,32 @@ export function Reveal({
     );
 
     observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
 
-  const hidden =
-    direction === "bas"
-      ? "translate-y-7"
-      : direction === "haut"
-        ? "-translate-y-5"
-        : direction === "gauche"
-          ? "-translate-x-7"
-          : direction === "droite"
-            ? "translate-x-7"
-            : "";
+    // Filet de sécurité : un défilement très rapide, un changement d'onglet ou
+    // un redimensionnement peuvent faire manquer l'intersection. Passé ce
+    // délai, mieux vaut un contenu affiché sans animation qu'un vide.
+    const secours = window.setTimeout(() => {
+      const box = element.getBoundingClientRect();
+      if (box.top < window.innerHeight && box.bottom > 0) {
+        setVisible(true);
+        observer.disconnect();
+      }
+    }, 1200);
+
+    return () => {
+      window.clearTimeout(secours);
+      observer.disconnect();
+    };
+  }, []);
 
   return (
     <Tag
       // @ts-expect-error — la référence est polymorphe selon la balise rendue
       ref={ref}
+      data-visible={visible ? "oui" : "non"}
+      data-sens={direction}
       style={visible && delay ? { transitionDelay: `${delay}ms` } : undefined}
-      className={cn(
-        "transition-[opacity,transform] duration-700 ease-douce will-change-[opacity,transform]",
-        visible ? "translate-none opacity-100" : cn("opacity-0", hidden),
-        className,
-      )}
+      className={cn("revele", className)}
     >
       {children}
     </Tag>

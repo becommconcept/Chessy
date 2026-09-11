@@ -201,11 +201,6 @@ const ACCUEIL: SeedPage = {
       ctaLabel: "Faire un signalement",
       image: { url: visuel("abstrait", "teaser-signalement"), alt: "Illustration d'un signalement" },
     }),
-    b("newsletter", {
-      title: "L'essentiel de Chessy dans votre boîte aux lettres",
-      text: "Une lettre d'information mensuelle : décisions du conseil, travaux à venir, agenda des associations. Désinscription en un clic.",
-      tone: "sable",
-    }),
   ],
 };
 

@@ -45,6 +45,7 @@ if(p.taille&&p.taille!=="normal")r.dataset.taille=p.taille;
 if(p.contraste==="fort")r.dataset.contraste="fort";
 if(p.lecture==="confort")r.dataset.lecture="confort";
 if(p.animations==="off")r.dataset.animations="off";
+r.classList.toggle("anim",p.animations!=="off"&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 }catch(e){}})();`;
 
 function apply(prefs: Prefs) {
@@ -65,6 +66,12 @@ function apply(prefs: Prefs) {
 
   if (prefs.animations === "on") delete root.dataset.animations;
   else root.dataset.animations = "off";
+
+  // Pilote le masquage initial des apparitions au défilement (voir globals.css).
+  root.classList.toggle(
+    "anim",
+    prefs.animations === "on" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
 }
 
 export function ComfortMenu({ compact = false }: { compact?: boolean }) {

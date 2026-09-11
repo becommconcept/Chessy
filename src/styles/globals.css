@@ -406,6 +406,52 @@
 }
 
 /* --------------------------------------------------------------------------
+   Apparition au défilement
+   -------------------------------------------------------------------------- */
+
+@layer components {
+  /*
+   * Le masquage initial n'est appliqué que si la classe « anim » est présente
+   * sur <html>. Cette classe est posée avant le premier rendu par le script de
+   * préférences, et seulement lorsque les animations sont souhaitées.
+   *
+   * Conséquence : sans JavaScript, ou avec les animations réduites, le contenu
+   * reste visible au lieu de disparaître. Une page de service public ne doit
+   * jamais dépendre d'un script pour être lisible.
+   */
+  .revele {
+    transition:
+      opacity 0.7s var(--ease-douce),
+      transform 0.7s var(--ease-douce);
+    will-change: opacity, transform;
+  }
+
+  html.anim .revele[data-visible="non"] {
+    opacity: 0;
+  }
+
+  html.anim .revele[data-visible="non"][data-sens="bas"] {
+    transform: translateY(1.75rem);
+  }
+
+  html.anim .revele[data-visible="non"][data-sens="haut"] {
+    transform: translateY(-1.25rem);
+  }
+
+  html.anim .revele[data-visible="non"][data-sens="gauche"] {
+    transform: translateX(-1.75rem);
+  }
+
+  html.anim .revele[data-visible="non"][data-sens="droite"] {
+    transform: translateX(1.75rem);
+  }
+
+  html:not(.anim) .revele {
+    transition: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
    Contenus riches produits par l'éditeur du back-office
    -------------------------------------------------------------------------- */
 

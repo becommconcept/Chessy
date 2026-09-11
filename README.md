@@ -11,6 +11,9 @@ public.
 > l'arborescence et les informations publiques du site actuel ; tout est
 > modifiable depuis le back-office, sans intervention technique.
 
+**Aperçus** : [`apercus/`](apercus/) — captures du site public, des trois
+services en ligne et du back-office, sur ordinateur et sur téléphone.
+
 ---
 
 ## Démarrage en une commande
