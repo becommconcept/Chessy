@@ -1,9 +1,16 @@
+import { twMerge } from "tailwind-merge";
+
 import { format, formatDistanceToNow, isSameDay } from "date-fns";
 import { fr } from "date-fns/locale";
 
 /** Concatène des classes CSS conditionnelles. */
 export function cn(...values: Array<string | false | null | undefined>): string {
-  return values.filter(Boolean).join(" ");
+  // twMerge arbitre les conflits : lorsqu'un composant pose une classe par
+  // défaut (« relative ») et que l'appelant en fournit une concurrente
+  // (« absolute »), c'est celle de l'appelant qui s'applique. Une simple
+  // concaténation laissait l'ordre de la feuille de styles trancher, avec des
+  // résultats imprévisibles.
+  return twMerge(values.filter(Boolean).join(" "));
 }
 
 /** Transforme un texte libre en identifiant d'URL. */

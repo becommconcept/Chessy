@@ -5,6 +5,7 @@
  * blocs. Tout est ensuite modifiable depuis le back-office : texte, images,
  * ordre des blocs, ajout ou suppression de sections.
  */
+import { photo } from "./photos";
 import { visuel } from "./reference";
 
 export type SeedBlock = { type: string; data: Record<string, unknown> };
@@ -48,7 +49,7 @@ const ACCUEIL: SeedPage = {
       title: "Chessy-les-Mines",
       subtitle:
         "Un village de 2 080 habitants où l'azurite a écrit l'histoire, et où la mairie se met au service du quotidien : démarches en ligne, réservation de salle, prêt de matériel.",
-      image: { url: visuel("village", "accueil-hero"), alt: "Vue du village de Chessy-les-Mines" },
+      image: photo("rues"),
       height: "grande",
       align: "left",
       showSearch: true,
@@ -161,7 +162,7 @@ const ACCUEIL: SeedPage = {
         {
           title: "L'église et le château",
           text: "Une église bâtie au XIIe siècle par les moines de Savigny, un château inscrit au titre des monuments historiques : la pierre dorée raconte le Beaujolais.",
-          image: { url: visuel("village", "carte-eglise"), alt: "Église du village" },
+          image: photo("chateau"),
           href: "/cadre-de-vie/patrimoine",
           badge: "Architecture",
         },
@@ -1528,7 +1529,7 @@ const CADRE: SeedPage[] = [
     icon: "Pickaxe",
     excerpt:
       "Deux mille ans d'exploitation du cuivre, l'azurite de Chessy, l'église du XIIe siècle et le château.",
-    cover: visuel("mine", "patrimoine-cover", "Patrimoine minier"),
+    cover: photo("eglise").url,
     seoDescription:
       "Histoire des mines de cuivre de Chessy-les-Mines, azurite dite chessylite, église du XIIe siècle et château inscrit : le patrimoine de la commune.",
     blocks: [
@@ -1537,7 +1538,7 @@ const CADRE: SeedPage[] = [
         title: "Chessy, la pierre bleue du Beaujolais",
         subtitle:
           "C'est ici qu'a été identifiée l'une des plus belles azurites du monde. Elle porte le nom du village : la chessylite.",
-        image: { url: visuel("mine", "hero-patrimoine"), alt: "Cristaux d'azurite" },
+        image: photo("eglise"),
         height: "moyenne",
         align: "left",
         showSearch: false,
@@ -1631,14 +1632,14 @@ const CADRE: SeedPage[] = [
       }),
       b("gallery", {
         title: "Le village en images",
-        subtitle: "Ces visuels de démonstration seront remplacés par les photographies de la commune.",
+        subtitle: "Les photographies de la commune ouvrent la galerie ; les visuels restants sont des illustrations de démonstration, à remplacer depuis la médiathèque.",
         layout: "mosaique",
         images: [
-          { image: { url: visuel("village", "galerie-1"), alt: "Le bourg" }, caption: "Le bourg et son église" },
+          { image: photo("eglise"), caption: "L'église et sa croix de pierre, la tour du château en arrière-plan" },
+          { image: photo("rues"), caption: "Une ruelle du vieux bourg en pierres dorées" },
+          { image: photo("chateau"), caption: "Le château et ses mâchicoulis" },
           { image: { url: visuel("mine", "galerie-2"), alt: "Galerie de mine" }, caption: "Mémoire des galeries" },
           { image: { url: visuel("paysage", "galerie-3"), alt: "Vignes" }, caption: "Les coteaux du Beaujolais" },
-          { image: { url: visuel("village", "galerie-4"), alt: "Ruelle" }, caption: "Ruelle en pierres dorées" },
-          { image: { url: visuel("paysage", "galerie-5"), alt: "Panorama" }, caption: "Panorama sur les monts" },
           { image: { url: visuel("mine", "galerie-6"), alt: "Azurite" }, caption: "L'azurite de Chessy" },
         ],
       }),

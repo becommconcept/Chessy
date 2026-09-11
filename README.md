@@ -112,7 +112,8 @@ Le back-office couvre l'ensemble de la vie du site :
 | Styles             | Tailwind CSS 4                                 | Charte centralisée, thème sombre et réglages d'accessibilité natifs    |
 | Base de données    | Prisma + SQLite (PostgreSQL en production)     | Installation immédiate, migration sans changement de code              |
 | Authentification   | Session signée (JWT `jose`) + `bcryptjs`       | Aucune dépendance à un service tiers                                   |
-| Illustrations      | Générateur SVG interne (`/api/visuel`)         | Site illustré dès l'installation, sans dépôt d'images lourdes          |
+| Photographies      | Fichiers de la commune dans `public/photos/`   | Versionnées, sans EXIF, servies via `next/image`                       |
+| Illustrations      | Générateur SVG interne (`/api/visuel`)         | Comble les emplacements sans photographie, sans dépôt d'images lourdes |
 | Cartographie       | Plan schématique dessiné à partir des données  | Aucun traceur tiers, fonctionne hors ligne, conforme RGPD              |
 | Courriels          | Interface `sendMail` à brancher                | Journalisés en console sans configuration : la démonstration est complète |
 
@@ -143,8 +144,11 @@ informations que seule la mairie détient, ou des décisions qui lui appartienne
    à compléter ». Aucun nom n'a été inventé.
 2. **Coordonnées des associations** — courriels, téléphones et référents sont à
    collecter auprès des présidents.
-3. **Photographies** — les visuels livrés sont des illustrations générées,
-   à remplacer par les photographies de la commune depuis la médiathèque.
+3. **Photographies** — trois photographies de la commune (l'église, le
+   château, une ruelle du bourg) sont intégrées et occupent les emplacements
+   les plus visibles ; elles sont dans `public/photos/` et dans la médiathèque.
+   Les autres visuels restent des illustrations générées, à remplacer au fil
+   des prises de vue depuis la médiathèque.
 4. **Documents PDF** — les fichiers installés sont des documents de
    démonstration ; les bulletins et comptes rendus réels doivent être téléversés.
 5. **Mots de passe** des trois comptes de démonstration, à changer

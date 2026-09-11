@@ -12,6 +12,7 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 import { buildAlerts, buildDocuments, buildEvents, buildNews, NEWS_CATEGORIES } from "./data/editorial";
+import { PHOTOS } from "./data/photos";
 import { SEED_MENUS, SEED_PAGES, type SeedMenuItem } from "./data/pages";
 import {
   ASSOCIATIONS,
@@ -183,6 +184,25 @@ async function main(): Promise<void> {
     });
     mediaCache.set(cacheKey, created.id);
     return created.id;
+  }
+
+  // Photographies réelles de la commune, versionnées dans public/photos/.
+  // Elles rejoignent la médiathèque pour être réutilisables depuis le back-office.
+  for (const p of PHOTOS) {
+    await prisma.media.create({
+      data: {
+        filename: p.filename,
+        url: p.url,
+        mimeType: "image/jpeg",
+        size: 0,
+        width: p.width,
+        height: p.height,
+        alt: p.alt,
+        credit: p.credit,
+        folder: p.folder,
+        uploadedById: admin.id,
+      },
+    });
   }
 
   /* ------------------------------- Documents ----------------------------- */
